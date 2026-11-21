@@ -13,13 +13,19 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
+import com.example.app.data.tools.ocr.OCRAssetLoaderRepositoryImpl
+import com.example.app.data.tools.ocr.OCREvaluatorRepositoryImpl
+import com.example.app.domain.usecase.ocr.LoadOCRAssetsUseCase
+import com.example.app.domain.usecase.ocr.RunOCRUseCase
+import com.example.app.features.ocr.OCRBenchmarkScreen
+import com.example.app.features.ocr.OCRBenchmarkViewModel
 import com.example.app.ui.theme.AppTheme
 
 class MainActivity : ComponentActivity() {
@@ -28,7 +34,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             AppTheme {
-                AppApp()
+                MainScreen()
             }
         }
     }
@@ -36,56 +42,89 @@ class MainActivity : ComponentActivity() {
 
 @PreviewScreenSizes
 @Composable
-fun AppApp() {
-    var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
+fun MainScreen() {
+    var currentDestination by rememberSaveable {
+        mutableStateOf(AppDestination.OCR)
+    }
 
     NavigationSuiteScaffold(
         navigationSuiteItems = {
-            AppDestinations.entries.forEach {
+            AppDestination.entries.forEach { destination ->
                 item(
                     icon = {
                         Icon(
-                            painterResource(it.icon),
-                            contentDescription = it.label
+                            painterResource(destination.icon),
+                            contentDescription = destination.label,
                         )
                     },
-                    label = { Text(it.label) },
-                    selected = it == currentDestination,
-                    onClick = { currentDestination = it }
+                    label = { Text(destination.label) },
+                    selected = currentDestination == destination,
+                    onClick = { currentDestination = destination },
                 )
             }
-        }
+        },
     ) {
-        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-            Greeting(
-                name = "Android",
-                modifier = Modifier.padding(innerPadding)
-            )
+        Scaffold(
+            modifier = Modifier.fillMaxSize()
+        ) { innerPadding ->
+            val modifier = Modifier.padding(innerPadding)
+
+            when (currentDestination) {
+                AppDestination.OCR -> OCRSection(modifier)
+                AppDestination.OBJECT_DETECTION -> {
+                    Text(
+                        text = "Benchmark de detección de objetos",
+                        modifier = modifier,
+                    )
+                }
+
+                AppDestination.POST_OCR -> {
+                    Text(
+                        text = "Benchmark de Post-OCR",
+                        modifier = modifier,
+                    )
+                }
+            }
         }
     }
 }
 
-enum class AppDestinations(
-    val label: String,
-    val icon: Int,
-) {
-    HOME("Home", R.drawable.ic_home),
-    FAVORITES("Favorites", R.drawable.ic_favorite),
-    PROFILE("Profile", R.drawable.ic_account_box),
-}
-
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
+private fun OCRSection(modifier: Modifier) {
+    val context = LocalContext.current.applicationContext
+
+    val ocrViewModel: OCRBenchmarkViewModel = remember(context) {
+        val evaluator = OCREvaluatorRepositoryImpl(context)
+        val assetLoader = OCRAssetLoaderRepositoryImpl(context)
+        val runUseCase = RunOCRUseCase(evaluator)
+        val loadUseCase = LoadOCRAssetsUseCase(assetLoader)
+
+        OCRBenchmarkViewModel(
+            runOCRUseCase = runUseCase,
+            loadOCRAssetsUseCase = loadUseCase,
+        )
+    }
+
+    OCRBenchmarkScreen(
+        viewModel = ocrViewModel,
+        modifier = modifier,
     )
 }
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    AppTheme {
-        Greeting("Android")
-    }
+enum class AppDestination(
+    val label: String,
+    val icon: Int,
+) {
+    OCR(
+        label = "OCR",
+        icon = R.drawable.ic_home,
+    ),
+    OBJECT_DETECTION(
+        label = "Objetos",
+        icon = R.drawable.ic_favorite,
+    ),
+    POST_OCR(
+        label = "Post-OCR",
+        icon = R.drawable.ic_account_box,
+    ),
 }
