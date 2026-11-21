@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.app.R
 import com.example.app.domain.models.OCRBenchmarkResult
+import com.example.app.domain.models.OCREngine
 import com.example.app.domain.models.OCRGroundTruth
 import com.example.app.domain.usecase.ocr.LoadOCRAssetsUseCase
 import com.example.app.domain.usecase.ocr.RunOCRUseCase
@@ -17,19 +18,19 @@ data class OCRBenchmarkUiState(
     val isRunningBenchmark: Boolean = false,
     val error: String? = null,
     val assets: Map<String, OCRGroundTruth> = emptyMap(),
-    val results: Map<String, OCRBenchmarkResult> = emptyMap(),
+    val results: Map<OCREngine, Map<String, OCRBenchmarkResult>> = emptyMap(),
 ) {
-    val averageLatencyMs: Long?
-        get() = results.values
-            .map { it.latencyMs }
-            .takeIf { it.isNotEmpty() }
+    fun averageLatencyMs(engine: OCREngine): Long? =
+        results[engine]?.values
+            ?.map { it.latencyMs }
+            ?.takeIf { it.isNotEmpty() }
             ?.average()
             ?.toLong()
 
-    val averageAccuracy: Float?
-        get() = results.values
-            .map { it.accuracy }
-            .takeIf { it.isNotEmpty() }
+    fun averageAccuracy(engine: OCREngine): Float? =
+        results[engine]?.values
+            ?.map { it.accuracy }
+            ?.takeIf { it.isNotEmpty() }
             ?.average()
             ?.toFloat()
 }

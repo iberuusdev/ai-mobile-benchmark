@@ -1,4 +1,4 @@
-package com.example.app.domain.tools.ocr
+package com.example.app.domain.repository.ocr
 
 import com.example.app.domain.models.OCRGroundTruth
 

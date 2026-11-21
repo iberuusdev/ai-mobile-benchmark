@@ -2,58 +2,97 @@ package com.example.app.data.tools.ocr
 
 import android.content.Context
 import com.example.app.domain.models.OCRBenchmarkResult
+import com.example.app.domain.models.OCREngine
 import com.example.app.domain.models.OCRGroundTruth
-import com.example.app.domain.tools.ocr.OCREvaluatorRepository
+import com.example.app.domain.repository.ocr.OCREvaluatorRepository
+import java.io.File
 import kotlin.math.max
 import kotlin.system.measureTimeMillis
 
 class OCREvaluatorRepositoryImpl(
     context: Context,
 ) : OCREvaluatorRepository {
-    private val appContext = context.applicationContext
+    private val appContext = context
 
     override suspend fun calculateMetrics(
-        mapOfCases: Map<String, OCRGroundTruth>,
-    ) : Map<String, OCRBenchmarkResult> {
-        val mapOfResults: MutableMap<String, OCRBenchmarkResult> = mutableMapOf()
-        val ocrRepository = MLKitOCRRepositoryImpl(appContext)
+        cases: Map<String, OCRGroundTruth>,
+    ) : Map<OCREngine, Map<String, OCRBenchmarkResult>> {
+        val engines = mapOf(
+            OCREngine.ML_KIT to { MLKitOCRRepositoryImpl() },
+            OCREngine.TESSERACT to { TesseractRepositoryImpl(appContext) },
+        )
+        val results = mutableMapOf<OCREngine, Map<String, OCRBenchmarkResult>>()
+        val mlKitResults = mutableListOf<Pair<String, Float>>()
 
-        try {
-            for ((caseName, grounTruth) in mapOfCases) {
-                val caseAssetPath = grounTruth.assetPath
-                val caseExpectedText = grounTruth.expectedText
-                var caseExtractedText: String
+        for ((engine, createRepository) in engines) {
+            val ocrRepository = createRepository()
 
-                val latencyMs = measureTimeMillis {
-                    caseExtractedText = ocrRepository.recognizeText(caseAssetPath)
+            try {
+                val engineResults = mutableMapOf<String, OCRBenchmarkResult>()
+
+                for ((name, grounTruth) in cases) {
+                    val image = grounTruth.image
+                    val bitmap = grounTruth.bitmap
+                    val expectedText = grounTruth.expectedText
+                    lateinit var extractedText: String
+
+                    val latencyMs = measureTimeMillis {
+                        extractedText = ocrRepository.recognizeText(
+                            image,
+                            bitmap,
+                        )
+                    }
+                    val result = Pair(expectedText, extractedText)
+                    val accuracy = calculateLevenshteinAccuracy(
+                        expectedText,
+                        extractedText,
+                    )
+
+                    engineResults[name] = OCRBenchmarkResult(
+                        result = result,
+                        latencyMs = latencyMs,
+                        accuracy = accuracy,
+                    )
+
+                    if (engine == OCREngine.ML_KIT) {
+                        mlKitResults.add(
+                            Pair(
+                                extractedText.replace("\n", ""),
+                                accuracy,
+                            )
+                        )
+                    }
                 }
-                val result = Pair(caseExpectedText, caseExtractedText)
-                val accuracy = calculateLevenshteinAccuracy(
-                    caseExpectedText,
-                    caseExtractedText,
-                )
-
-                mapOfResults[caseName] = OCRBenchmarkResult(
-                    result,
-                    latencyMs,
-                    accuracy,
-                )
+                results[engine] = engineResults
+            } finally {
+                ocrRepository.close()
             }
-        } finally {
-            ocrRepository.close()
         }
-        return mapOfResults
+        createExtractedTextsFile(mlKitResults)
+        return results
     }
 
     private fun calculateLevenshteinAccuracy(
         expectedText: String,
         extractedText: String,
     ): Float {
-        val expectedTextCleaned = expectedText.lowercase().trim().replace("\\s+".toRegex(), " ")
-        val extractedTextCleaned = extractedText.lowercase().trim().replace("\\s+".toRegex(), " ")
+        val expectedTextCleaned = expectedText
+            .lowercase()
+            .trim()
+            .replace("\\s+".toRegex(), " ")
+        val extractedTextCleaned = extractedText
+            .lowercase()
+            .trim()
+            .replace("\\s+".toRegex(), " ")
 
-        val distance = levenshteinDistance(expectedTextCleaned, extractedTextCleaned)
-        val maxLength = max(expectedTextCleaned.length, extractedTextCleaned.length)
+        val distance = levenshteinDistance(
+            expectedTextCleaned,
+            extractedTextCleaned,
+        )
+        val maxLength = max(
+            expectedTextCleaned.length,
+            extractedTextCleaned.length,
+        )
         if (maxLength == 0) return 100f
 
         val accuracy = (1f - (distance.toFloat() / maxLength.toFloat())) * 100f
@@ -61,8 +100,7 @@ class OCREvaluatorRepositoryImpl(
     }
 
     private fun levenshteinDistance(
-        str1: String,
-        str2: String,
+        str1: String, str2: String,
     ): Int {
         if (str1 == str2) return 0
         if (str1.isEmpty()) return str2.length
@@ -87,5 +125,15 @@ class OCREvaluatorRepositoryImpl(
         }
 
         return prev[str2.length]
+    }
+
+    private fun createExtractedTextsFile(mlKitResults: List<Pair<String, Float>>) {
+        val content = mlKitResults
+            .joinToString(separator = "\n") { (text, accuracy) ->
+                "$text | $accuracy"
+            }
+
+        File(appContext.filesDir, "mlkit_extracted_texts.txt")
+            .writeText(content)
     }
 }

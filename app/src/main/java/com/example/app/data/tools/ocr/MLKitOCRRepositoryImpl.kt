@@ -1,29 +1,21 @@
 package com.example.app.data.tools.ocr
 
-import android.content.Context
-import android.graphics.BitmapFactory
-import com.example.app.domain.tools.ocr.OCREngineRepository
+import android.graphics.Bitmap
+import com.example.app.domain.repository.ocr.OCREngineRepository
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.suspendCancellableCoroutine
-import java.lang.AutoCloseable
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-class MLKitOCRRepositoryImpl(
-    context: Context,
-) : OCREngineRepository, AutoCloseable {
-
-    private val appContext = context.applicationContext
+class MLKitOCRRepositoryImpl : OCREngineRepository {
     private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
-    override suspend fun recognizeText(assetPath: String): String {
-        val bitmap = appContext.assets.open(assetPath).use { stream ->
-            BitmapFactory.decodeStream(stream)
-        } ?: throw IllegalArgumentException("Could not open image: $assetPath")
-
-        val image = InputImage.fromBitmap(bitmap, 0)
+    override suspend fun recognizeText(
+        image: InputImage,
+        bitmapImage: Bitmap,
+    ): String {
         return suspendCancellableCoroutine { continuation ->
                 recognizer.process(image)
                     .addOnSuccessListener { visionText ->
@@ -35,7 +27,7 @@ class MLKitOCRRepositoryImpl(
             }
     }
 
-    override fun close() {
+    override suspend fun close() {
         recognizer.close()
     }
 }

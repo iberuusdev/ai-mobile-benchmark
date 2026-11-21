@@ -1,8 +1,10 @@
 package com.example.app.data.tools.ocr
 
 import android.content.Context
+import android.graphics.BitmapFactory
 import com.example.app.domain.models.OCRGroundTruth
-import com.example.app.domain.tools.ocr.OCRAssetLoaderRepository
+import com.example.app.domain.repository.ocr.OCRAssetLoaderRepository
+import com.google.mlkit.vision.common.InputImage
 
 class OCRAssetLoaderRepositoryImpl(
     context: Context,
@@ -10,7 +12,7 @@ class OCRAssetLoaderRepositoryImpl(
     private val appContext = context.applicationContext
 
     override suspend fun loadAssets(folderId: Int): Map<String, OCRGroundTruth> {
-        val mapOfAssets: MutableMap<String, OCRGroundTruth> = mutableMapOf()
+        val mapOfAssets = mutableMapOf<String, OCRGroundTruth>()
 
         val folderName = appContext.getString(folderId)
         val imageNames = appContext.assets
@@ -39,19 +41,24 @@ class OCRAssetLoaderRepositoryImpl(
         if (imageNames.size != groundTruthArray.size) {
             throw IllegalStateException(
                 "Found ${imageNames.size} images but " +
-                        "${groundTruthArray.size} ground-truth strings.",
+                    "${groundTruthArray.size} ground-truth strings.",
             )
         }
 
         for ((index, imageName) in imageNames.withIndex()) {
             val baseName = imageName.substringBeforeLast('.')
             val assetPath = "$folderName/$imageName"
-            val groundTruth = groundTruthArray.getOrNull(index)
+            val bitmap = appContext.assets.open(assetPath).use { stream ->
+                BitmapFactory.decodeStream(stream)
+            } ?: throw IllegalArgumentException("Couldn't open image: $assetPath")
+            val image = InputImage.fromBitmap(bitmap, 0)
+            val expectedText = groundTruthArray.getOrNull(index)
                 ?: throw IllegalStateException("Missing ground truth for $imageName.")
 
             mapOfAssets[baseName] = OCRGroundTruth(
-                assetPath,
-                groundTruth,
+                image = image,
+                bitmap = bitmap,
+                expectedText = expectedText,
             )
         }
         return mapOfAssets.toSortedMap()
