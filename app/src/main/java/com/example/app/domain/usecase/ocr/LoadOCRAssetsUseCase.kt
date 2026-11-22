@@ -1,6 +1,6 @@
 package com.example.app.domain.usecase.ocr
 
-import com.example.app.domain.models.OCRGroundTruth
+import com.example.app.domain.models.ocr.OCRGroundTruth
 import com.example.app.domain.repository.ocr.OCRAssetLoaderRepository
 
 class LoadOCRAssetsUseCase(

@@ -1,8 +1,8 @@
-package com.example.app.data.tools.ocr
+package com.example.app.data.ocr
 
 import android.content.Context
 import android.graphics.BitmapFactory
-import com.example.app.domain.models.OCRGroundTruth
+import com.example.app.domain.models.ocr.OCRGroundTruth
 import com.example.app.domain.repository.ocr.OCRAssetLoaderRepository
 import com.google.mlkit.vision.common.InputImage
 

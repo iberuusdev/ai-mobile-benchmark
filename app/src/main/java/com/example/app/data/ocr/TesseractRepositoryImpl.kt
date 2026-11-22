@@ -1,4 +1,4 @@
-package com.example.app.data.tools.ocr
+package com.example.app.data.ocr
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -7,6 +7,11 @@ import com.google.mlkit.vision.common.InputImage
 import com.googlecode.tesseract.android.TessBaseAPI
 import java.io.File
 
+private const val TESSERACT_PATH = "tesseract"
+private const val TESS_DATA_PATH = "tessdata"
+private const val SPANISH_TRAINED_DATA_PATH = "spa.traineddata"
+private const val SPANISH = "spa"
+
 class TesseractRepositoryImpl(
     context: Context,
 ) : OCREngineRepository {
@@ -14,19 +19,20 @@ class TesseractRepositoryImpl(
     private val tess: TessBaseAPI = TessBaseAPI()
 
     init {
-        val dataPath = File(appContext.filesDir, "tesseract").absolutePath
-        val tessDataDir = File(dataPath, "tessdata")
+        val dataPath = File(appContext.filesDir, TESSERACT_PATH).absolutePath
+        val tessDataDir = File(dataPath, TESS_DATA_PATH)
         tessDataDir.mkdirs()
 
-        val trainedData = File(tessDataDir, "spa.traineddata")
+        val trainedData = File(tessDataDir, SPANISH_TRAINED_DATA_PATH)
         if (!trainedData.exists()) {
-            context.assets.open("tessdata/spa.traineddata").use { input ->
-                trainedData.outputStream().use { output ->
-                    input.copyTo(output)
+            context.assets.open("$TESS_DATA_PATH/$SPANISH_TRAINED_DATA_PATH")
+                .use { input ->
+                    trainedData.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
                 }
-            }
         }
-        if (!tess.init(dataPath, "spa")) {
+        if (!tess.init(dataPath, SPANISH)) {
             throw IllegalStateException(
                 "Couldn't initialise OCR training for Tesseract correctly."
             )

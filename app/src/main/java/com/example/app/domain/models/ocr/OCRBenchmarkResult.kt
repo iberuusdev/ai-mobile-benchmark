@@ -1,4 +1,4 @@
-package com.example.app.domain.models
+package com.example.app.domain.models.ocr
 
 data class OCRBenchmarkResult(
     val result: Pair<String, String>,   // first: expectedText, second: extractedText

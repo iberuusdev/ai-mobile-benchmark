@@ -1,4 +1,4 @@
-package com.example.app.data.tools.ocr
+package com.example.app.data.ocr
 
 import android.graphics.Bitmap
 import com.example.app.domain.repository.ocr.OCREngineRepository

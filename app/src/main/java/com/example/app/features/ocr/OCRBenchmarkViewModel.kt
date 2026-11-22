@@ -3,9 +3,9 @@ package com.example.app.features.ocr
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.app.R
-import com.example.app.domain.models.OCRBenchmarkResult
-import com.example.app.domain.models.OCREngine
-import com.example.app.domain.models.OCRGroundTruth
+import com.example.app.domain.models.ocr.OCRBenchmarkResult
+import com.example.app.domain.models.ocr.OCREngine
+import com.example.app.domain.models.ocr.OCRGroundTruth
 import com.example.app.domain.usecase.ocr.LoadOCRAssetsUseCase
 import com.example.app.domain.usecase.ocr.RunOCRUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
