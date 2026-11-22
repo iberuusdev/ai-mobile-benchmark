@@ -20,12 +20,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
-import com.example.app.data.tools.ocr.OCRAssetLoaderRepositoryImpl
-import com.example.app.data.tools.ocr.OCREvaluatorRepositoryImpl
+import com.example.app.data.ocr.OCRAssetLoaderRepositoryImpl
+import com.example.app.data.ocr.OCREvaluatorRepositoryImpl
+import com.example.app.data.post_ocr.PostOCRAssetLoaderRepositoryImpl
+import com.example.app.data.post_ocr.PostOCREvaluatorRepositoryImpl
 import com.example.app.domain.usecase.ocr.LoadOCRAssetsUseCase
 import com.example.app.domain.usecase.ocr.RunOCRUseCase
+import com.example.app.domain.usecase.post_ocr.LoadPostOCRAssetsUseCase
+import com.example.app.domain.usecase.post_ocr.RunPostOCRUseCase
 import com.example.app.features.ocr.OCRBenchmarkScreen
 import com.example.app.features.ocr.OCRBenchmarkViewModel
+import com.example.app.features.post_ocr.PostOCRBenchmarkScreen
+import com.example.app.features.post_ocr.PostOCRBenchmarkViewModel
 import com.example.app.ui.theme.AppTheme
 
 class MainActivity : ComponentActivity() {
@@ -77,13 +83,7 @@ fun MainScreen() {
                         modifier = modifier,
                     )
                 }
-
-                AppDestination.POST_OCR -> {
-                    Text(
-                        text = "Benchmark de Post-OCR",
-                        modifier = modifier,
-                    )
-                }
+                AppDestination.POST_OCR -> PostOCRSection(modifier)
             }
         }
     }
@@ -107,6 +107,28 @@ private fun OCRSection(modifier: Modifier) {
 
     OCRBenchmarkScreen(
         viewModel = ocrViewModel,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun PostOCRSection(modifier: Modifier) {
+    val context = LocalContext.current.applicationContext
+
+    val postOCRViewModel: PostOCRBenchmarkViewModel = remember(context) {
+        val evaluator = PostOCREvaluatorRepositoryImpl(context)
+        val assetLoader = PostOCRAssetLoaderRepositoryImpl(context)
+        val runUseCase = RunPostOCRUseCase(evaluator)
+        val loadUseCase = LoadPostOCRAssetsUseCase(assetLoader)
+
+        PostOCRBenchmarkViewModel(
+            runPostOCRUseCase = runUseCase,
+            loadPostOCRAssetsUseCase = loadUseCase,
+        )
+    }
+
+    PostOCRBenchmarkScreen(
+        viewModel = postOCRViewModel,
         modifier = modifier,
     )
 }

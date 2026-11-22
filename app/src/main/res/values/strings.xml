@@ -13,4 +13,5 @@
         <item>INGREDIENTES: Panceta de cerdo (98%), sal, dextrosa, estabilizante (E-451i), antioxidante (ascorbato sódico), extracto de especias, conservador (nitrito sódico).</item>
         <item>INGREDIENTES: Pechuga de pollo (99%), sal, estabilizante (polifosfatos), dextrosa, antioxidante (ascorbato sódico), aroma, conservador (nitrito sódico). Puede contener trazas de soja, proteínas de la leche, frutos de cáscara y huevo. Puede contener restos de cartílagos y/o huesos al proceder de un pollo deshuesado a mano.</item>
     </string-array>
+    <string name="post_ocr_groundtruth">mlkit_extracted_texts.txt</string>
 </resources>
